@@ -11,7 +11,7 @@ import subprocess
 import shutil
 from concurrent.futures import ThreadPoolExecutor
 
-# 📦 SELENIUM COMPONENTS
+# 📦 SELENIUM & DRIVER TOOLS
 from selenium import webdriver
 from selenium_stealth import stealth
 from selenium.webdriver.common.by import By
@@ -20,11 +20,16 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
-# --- V100 CONFIGURATION ---
-THREADS = 2             # 2 Agents per machine
+# --- V100 TUNED CONFIGURATION ---
+THREADS = 2             # 2 Agents per machine (10 Agents Total)
 TOTAL_DURATION = 25000  # ~7 Hours
-BURST_SPEED = (0.08, 0.08) # ⚡ 80ms TARGET
-SESSION_MAX_SEC = 60    # ♻️ 1 Minute Restarts to prevent lag
+
+# ⚡ TARGET SPEED: 80ms - 100ms
+BURST_MIN = 0.08
+BURST_MAX = 0.10
+
+# ♻️ RESTART CYCLES (2 Minutes)
+SESSION_MAX_SEC = 120    
 
 GLOBAL_SENT = 0
 COUNTER_LOCK = threading.Lock()
@@ -54,7 +59,6 @@ def get_driver(agent_id):
         temp_dir = os.path.join(tempfile.gettempdir(), f"v100_{agent_id}_{int(time.time())}")
         chrome_options.add_argument(f"--user-data-dir={temp_dir}")
 
-        # ✅ CRITICAL FIX FOR GITHUB ACTIONS
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
 
@@ -91,7 +95,7 @@ def run_life_cycle(agent_id, cookie, target, messages):
         driver = None
         session_start = time.time()
         try:
-            log_status(agent_id, "🚀 Launching...")
+            log_status(agent_id, "🚀 Launching Browser...")
             driver = get_driver(agent_id)
             driver.get("https://www.instagram.com/")
             
@@ -101,15 +105,22 @@ def run_life_cycle(agent_id, cookie, target, messages):
             time.sleep(5)
 
             msg_box = find_mobile_box(driver)
+            
+            # --- THE FIRING LOOP ---
             while (time.time() - session_start) < SESSION_MAX_SEC:
+                if (time.time() - global_start) > TOTAL_DURATION: break
+                
                 msg = random.choice(messages)
                 if adaptive_inject(driver, msg_box, f"{msg} {random.randint(10,99)}"):
                     with COUNTER_LOCK:
                         global GLOBAL_SENT
                         GLOBAL_SENT += 1
-                time.sleep(0.08) # ⚡ 80ms Pulse
+                
+                # ⚡ 80ms - 100ms Pulse
+                time.sleep(random.uniform(BURST_MIN, BURST_MAX))
         except: pass
         finally:
+            log_status(agent_id, "♻️ 2-Minute Restart & RAM Flush")
             if driver: driver.quit()
             gc.collect()
 
@@ -118,6 +129,10 @@ def main():
     target = os.environ.get("TARGET_THREAD_ID", "")
     messages = os.environ.get("MESSAGES", "Strike").split("|")
     
+    if not cookie or not target:
+        print("❌ Missing Secrets!")
+        return
+
     with ThreadPoolExecutor(max_workers=THREADS) as executor:
         for i in range(THREADS):
             executor.submit(run_life_cycle, i+1, cookie, target, messages)
