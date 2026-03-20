@@ -1,4 +1,4 @@
-name: Phoenix V100 (5-Machine FIX)
+name: Phoenix V100 (5-Machine Matrix)
 
 on:
   workflow_dispatch:
@@ -24,12 +24,8 @@ jobs:
         python-version: '3.9'
 
     - name: Install Dependencies
-      # ✅ CRITICAL FIX: You are missing 'selenium-stealth' and 'webdriver-manager'
-      # Without these, 'import' fails and the script crashes instantly.
       run: |
-        pip install selenium==4.9.0 
-        pip install selenium-stealth 
-        pip install webdriver-manager
+        pip install selenium==4.9.0 selenium-stealth webdriver-manager
 
     - name: 🔥 Run Phoenix Engine
       env:
@@ -38,14 +34,8 @@ jobs:
         MESSAGES: ${{ secrets.MESSAGES }}
         MACHINE_INDEX: ${{ matrix.machine-id }}
       run: |
-        # Force kill any ghost chrome processes before starting
-        pkill -f chrome || true 
-        
         while true; do
-          # Using -u for unbuffered logs so you see the REAL error if it fails
           python -u main.py
-          
-          echo "⚠️ Engine crashed. Check logs above for the Python Error."
-          echo "⚠️ Restarting Engine in 5s..."
+          echo "⚠️ Engine Exit. Respawning in 5s..."
           sleep 5
         done
