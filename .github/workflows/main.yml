@@ -1,0 +1,51 @@
+name: Phoenix V100 (5-Machine FIX)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
+
+jobs:
+  run-loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      matrix:
+        machine-id: [1, 2, 3, 4, 5]
+      fail-fast: false
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install Dependencies
+      # ✅ CRITICAL FIX: You are missing 'selenium-stealth' and 'webdriver-manager'
+      # Without these, 'import' fails and the script crashes instantly.
+      run: |
+        pip install selenium==4.9.0 
+        pip install selenium-stealth 
+        pip install webdriver-manager
+
+    - name: 🔥 Run Phoenix Engine
+      env:
+        INSTA_COOKIE: ${{ secrets.INSTA_COOKIE }}
+        TARGET_THREAD_ID: ${{ secrets.TARGET_THREAD_ID }}
+        MESSAGES: ${{ secrets.MESSAGES }}
+        MACHINE_INDEX: ${{ matrix.machine-id }}
+      run: |
+        # Force kill any ghost chrome processes before starting
+        pkill -f chrome || true 
+        
+        while true; do
+          # Using -u for unbuffered logs so you see the REAL error if it fails
+          python -u main.py
+          
+          echo "⚠️ Engine crashed. Check logs above for the Python Error."
+          echo "⚠️ Restarting Engine in 5s..."
+          sleep 5
+        done
