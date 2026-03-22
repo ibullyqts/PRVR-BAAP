@@ -90,17 +90,24 @@ def adaptive_inject(driver, element, text):
     except: return False
 
 def get_dynamic_block(target_name):
-    """Generates a fresh 20-line block with a rotating emoji."""
+    """Generates a fresh 20-line block with a rotating emoji and auto-aligned underlines."""
     emojis = ["👑", "⚡", "🔥", "🦈", "🦁", "💎", "⚔️", "🔱", "🧿", "🌪️", "🐍", "🦍"]
     selected_emoji = random.choice(emojis)
     
-    # Using your perfect aligned format
-    line = f"【 {target_name} 】 SAY P R V R बाप {selected_emoji} ________________________/"
+    # Target length for the underline section to maintain alignment
+    # If the name gets longer, we subtract underlines to keep the total width same
+    base_underlines = 24
+    adjustment = len(target_name) - 4 # 4 is the length of 'EZRA'
+    num_underlines = max(5, base_underlines - adjustment)
+    underlines = "_" * num_underlines
+
+    # The perfect format you requested
+    line = f"【 {target_name} 】 SAY P R V R बाप {selected_emoji} {underlines}/"
     
     # Build the 20-line block
     block = "\n".join([line for _ in range(20)])
-    # Add a unique ID at the bottom for bypass
-    return f"{block}\nID: {random.randint(100, 999)}"
+    # Unique ID to bypass duplicate filters
+    return f"{block}\n⚡ ID: {random.randint(1000, 9999)}"
 
 def run_life_cycle(agent_id, cookie, target_id, target_name):
     global_start = time.time()
@@ -123,7 +130,7 @@ def run_life_cycle(agent_id, cookie, target_id, target_name):
             while (time.time() - session_start) < SESSION_MAX_SEC:
                 if (time.time() - global_start) > TOTAL_DURATION: break
                 
-                # 🔄 Get fresh block with a new emoji each time
+                # 🔄 Generates fresh block with a new emoji each time
                 final_text = get_dynamic_block(target_name)
                 
                 if adaptive_inject(driver, msg_box, final_text):
@@ -142,13 +149,13 @@ def run_life_cycle(agent_id, cookie, target_id, target_name):
             gc.collect()
 
 def main():
+    # 🔑 Credentials from GitHub Secrets
     cookie = os.environ.get("INSTA_COOKIE", "")
     target_id = os.environ.get("TARGET_THREAD_ID", "")
-    # Add 'TARGET_NAME' to your GitHub Secrets (e.g., EZRA)
-    target_name = os.environ.get("TARGET_NAME", "USER") 
+    target_name = os.environ.get("TARGET_NAME", "EZRA") # Defaults to EZRA if secret is missing
     
     if not cookie or not target_id:
-        print("❌ Missing Secrets!")
+        print("❌ Missing Secrets (INSTA_COOKIE or TARGET_THREAD_ID)!")
         return
 
     with ThreadPoolExecutor(max_workers=THREADS) as executor:
