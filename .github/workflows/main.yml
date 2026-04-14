@@ -1,15 +1,15 @@
-name: "Hexa-Core Nitro Overdrive"
+name: "2026 Hexa-Core Overdrive"
 
 on:
-  workflow_dispatch: # Manual trigger
+  workflow_dispatch:
 
 jobs:
   flood:
     runs-on: ubuntu-latest
+    timeout-minutes: 360 # 6-hour maximum life
     strategy:
       fail-fast: false
       matrix:
-        # This spins up 6 separate virtual machines
         machine_id: [1, 2, 3, 4, 5, 6]
     
     steps:
@@ -24,9 +24,9 @@ jobs:
       - name: Install Dependencies
         run: pip install instagrapi
 
-      - name: Execute Agents
+      - name: Run Overdrive Agent
         env:
-          # If you have two IDs, Machine 1-3 uses ID_1, 4-6 uses ID_2
+          # Split load: Machines 1-3 use Account 1, 4-6 use Account 2
           INSTA_COOKIE: ${{ matrix.machine_id <= 3 && secrets.INSTA_COOKIE_1 || secrets.INSTA_COOKIE_2 }}
           TARGET_THREAD_ID: ${{ secrets.TARGET_THREAD_ID }}
           TARGET_NAME: ${{ secrets.TARGET_NAME }}
