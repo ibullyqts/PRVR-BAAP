@@ -4,72 +4,60 @@ import re
 import random
 from playwright.async_api import async_playwright
 
-# --- 🛰️ RELAYER SETTINGS ---
-WORKERS = 2            
-PULSE_DELAY = 180      # 180ms - Slower but avoids the "Silent Drop"
-RESTART_CYCLE = 200    
-
-def get_payload(target_name):
-    emojis = ["⭕", "☣️", "🛑", "🌀", "🚨", "💠"]
-    emo = random.choice(emojis)
-    # Reduced line count to 12 to ensure it doesn't trigger "Wall of Text" filters
-    line = f"【 {target_name} 】 𝚂ᴀ𝚈 【﻿ＰＲＶＲ】 𝐃ᴀ𝐃𝐃𝐘 {emo} ____________________/\\n"
-    return line * 12 + f"\\n⚡ ID: {random.getrandbits(16)}"
+# --- ⚙️ NITRO-BURST SETTINGS ---
+WORKERS = 3            # 3 Browsers per machine
+BATCH_SIZE = 4         # Fires 4 messages in one rapid burst
+PULSE_DELAY = 120      # 120ms between bursts (Effective speed: 30ms/msg)
+RESTART_CYCLE = 240    
 
 async def hyper_worker(context, thread_id, target_name, worker_id):
     page = await context.new_page()
     
     try:
-        print(f"🚀 [Worker {worker_id}] Establishing Socket Relay...")
-        # Use a real user-flow: Home -> Direct -> Thread
-        await page.goto("https://www.instagram.com/", wait_until="networkidle")
-        await asyncio.sleep(2)
-        await page.goto(f"https://www.instagram.com/direct/t/{thread_id}/", wait_until="networkidle")
+        print(f"🚀 [Worker {worker_id}] Syncing Nitro-Burst Engine...")
+        # Use 'commit' to get into the chat faster
+        await page.goto(f"https://www.instagram.com/direct/t/{thread_id}/", wait_until="commit")
         
-        # ⚡ THE RELAY INJECTOR
-        # Instead of 'filling', we use the browser's internal sequence
+        # ⚡ THE NITRO-BURST INJECTOR
         await page.evaluate("""
-            async ({name, delay, threadId}) => {
+            async ({name, delay, batchSize}) => {
                 const box = document.querySelector('div[role="textbox"], textarea[placeholder*="Message"]');
                 if (!box) return;
 
+                const emojis = ["⭕", "☣️", "🛑", "🌀", "🚨", "💠", "💮"];
+                
                 setInterval(() => {
-                    const emojis = ["⭕", "☣️", "🛑", "🌀", "🚨", "💠"];
-                    const emo = emojis[Math.floor(Math.random() * emojis.length)];
-                    const line = `【 ${name} 】 𝚂ᴀ𝚈 【﻿ＰＲＶＲ】 𝐃ᴀ𝐃𝐃𝐘 ${emo} ____________________/\\n`;
-                    const text = line.repeat(12) + "\\n⚡ ID: " + Math.random().toString(36).substring(5);
+                    for (let i = 0; i < batchSize; i++) {
+                        const emo = emojis[Math.floor(Math.random() * emojis.length)];
+                        const line = `【 ${name} 】 𝚂ᴀ𝚈 【﻿ＰＲＶＲ】 𝐃ᴀ𝐃𝐃𝐘 ${emo} ____________________/\\n`;
+                        // Optimized line count for speed & visibility
+                        const text = line.repeat(15) + "\\n⚡ ID: " + Math.random().toString(36).substring(5);
 
-                    // TRIGGER NATIVE BROWSER EVENTS IN SEQUENCE
-                    box.focus();
-                    
-                    // 1. Simulate a 'BeforeInput' event (What real browsers do)
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.setData('text/plain', text);
-                    box.dispatchEvent(new ClipboardEvent('paste', {
-                        clipboardData: dataTransfer,
-                        bubbles: true
-                    }));
+                        // 1. Instant Direct Injection
+                        box.focus();
+                        document.execCommand('insertText', false, text);
+                        
+                        // 2. Trigger Internal React State
+                        box.dispatchEvent(new Event('input', { bubbles: true }));
 
-                    // 2. Trigger the Internal React/V-DOM update
-                    box.dispatchEvent(new Event('input', { bubbles: true }));
+                        // 3. Native Enter Dispatch
+                        const enter = new KeyboardEvent('keydown', {
+                            bubbles: true, cancelable: true, key: 'Enter', code: 'Enter', keyCode: 13
+                        });
+                        box.dispatchEvent(enter);
 
-                    // 3. Dispatch the final 'Enter'
-                    const enter = new KeyboardEvent('keydown', {
-                        bubbles: true, cancelable: true, key: 'Enter', code: 'Enter', keyCode: 13
-                    });
-                    box.dispatchEvent(enter);
-
-                    // 4. Force Clear
-                    box.innerText = "";
+                        // 4. Force DOM Cleanup
+                        box.innerHTML = "";
+                    }
                 }, delay);
             }
-        """, {"name": target_name, "delay": PULSE_DELAY, "threadId": thread_id})
+        """, {"name": target_name, "delay": PULSE_DELAY, "batchSize": BATCH_SIZE})
 
-        print(f"🔥 [Worker {worker_id}] RELAY ACTIVE. Monitoring Socket...")
+        print(f"🔥 [Worker {worker_id}] NITRO BURST ACTIVE: {BATCH_SIZE}x Pulse.")
         await asyncio.sleep(RESTART_CYCLE)
 
     except Exception as e:
-        print(f"⚠️ [Worker {worker_id}] Connection Dropped: {e}")
+        print(f"⚠️ [Worker {worker_id}] Error: {e}")
     finally:
         await page.close()
 
@@ -86,10 +74,9 @@ async def main():
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
-        # Using a Very Specific Chrome Fingerprint
         context = await browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-            viewport={'width': 1280, 'height': 720}
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            viewport={'width': 800, 'height': 600}
         )
         
         await context.add_cookies([{
