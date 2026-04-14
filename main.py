@@ -1,74 +1,53 @@
 import os
 import time
 import random
-import instagrapi.extractors
 from instagrapi import Client
 from concurrent.futures import ThreadPoolExecutor
 
-# =======================================================
-# 🛠️ 2026 TRIPLE-PATCH (Fixes Login Errors)
-# =======================================================
-def patched_extract_broadcast_channel(data): return []
-original_extract_user_gql = instagrapi.extractors.extract_user_gql
-def patched_extract_user_gql(data):
-    if isinstance(data, dict):
-        data['pinned_channels_info'] = data.get('pinned_channels_info', {})
-        data['broadcast_channel'] = []
-    return original_extract_user_gql(data)
-instagrapi.extractors.extract_broadcast_channel = patched_extract_broadcast_channel
-instagrapi.extractors.extract_user_gql = patched_extract_user_gql
-# =======================================================
+# --- ⚙️ CONFIGURATION ---
+SESSION_ID = os.environ.get("INSTA_COOKIE") # Your sessionid
+THREAD_ID = os.environ.get("TARGET_THREAD_ID") # The chat ID
+TARGET_NAME = os.environ.get("TARGET_NAME", "EZRA")
+THREADS = 5  # Number of simultaneous "shooters"
 
-SESSION_ID = os.environ.get("INSTA_COOKIE")
-THREAD_ID = os.environ.get("TARGET_THREAD_ID")
-TARGET_NAME = os.environ.get("TARGET_NAME", "TARGET")
-
-AGENTS = 8          # 8 Agents per machine (48 Total across 6 machines)
-BLOCKS = 8          # Visual wall size
-DELAY = 0.05        # 50ms pulse
-
-def rapid_agent(cl, thread_id, target_name, agent_id):
-    emojis = ["💠", "💮", "🌀", "🚨", "⭕", "☣️"]
+def burst_worker(cl, thread_id, target_name, worker_id):
+    """Fires messages as fast as the network allows"""
+    emojis = ["⭕", "☣️", "🛑", "🌀", "🚨", "💠", "💮"]
+    
+    print(f"🔥 Worker {worker_id} initialized.")
+    
     while True:
         try:
             emo = random.choice(emojis)
-            line = f"【﻿ {target_name} 】 𝚂ᴀ𝚈 【﻿ＰＲＶＲ】 𝐃ᴀᴅᴅ𝐘 {emo}\n"
-            message = (line * BLOCKS) + f"⚡ ID: {random.randint(1000, 9999)}"
-            cl.direct_send(message, thread_ids=[str(thread_id)])
-            print(f"💥 [Agent {agent_id}] Wall Injected.")
-            time.sleep(DELAY)
+            # Creating the heavy-duty text block
+            text = f"【 {target_name} 】 ➠➠चुदाई का बकरा🪩________________________/ {emo}\n" * 10
+            text += f"⚡ ID: {random.randint(1000, 9999)}"
+
+            # Direct API call (No browser rendering)
+            cl.direct_send(text, thread_ids=[thread_id])
+            print(f"✅ [Worker {worker_id}] Sent successfully.")
+            
         except Exception as e:
-            if "429" in str(e):
-                time.sleep(20) # Rate limit cooling
-            else:
-                time.sleep(5)
+            print(f"⚠️ [Worker {worker_id}] Blocked or Error: {e}")
+            time.sleep(5)  # Wait if rate limited
 
 def main():
     if not SESSION_ID or not THREAD_ID:
-        print("❌ CONFIG MISSING")
+        print("❌ Missing Environment Variables!")
         return
 
     cl = Client()
-    # 2026 Device Signature
-    cl.set_user_agent("Instagram 410.0.0.0.96 Android (33/13; 1080x2400; Xiaomi; M2007J20CG)")
+    
+    # Login via sessionid to bypass 2FA/Email verification
+    print("📡 Syncing with Instagram API...")
+    cl.login_by_sessionid(SESSION_ID)
+    
+    print(f"🚀 NITRO-BURST STARTING ON THREAD: {THREAD_ID}")
 
-    try:
-        print("📡 Syncing API (Patches Active)...")
-        cl.login_by_sessionid(SESSION_ID)
-        print(f"🔓 Authenticated. Machine locking to thread {THREAD_ID}")
-
-        # Deploy agents into background threads
-        executor = ThreadPoolExecutor(max_workers=AGENTS)
-        for i in range(AGENTS):
-            executor.submit(rapid_agent, cl, THREAD_ID, TARGET_NAME, i+1)
-        
-        # --- INFINITY LOCK ---
-        # Keeps the GitHub Action machine alive indefinitely
-        while True:
-            time.sleep(60)
-
-    except Exception as e:
-        print(f"❌ Critical Failure: {e}")
+    # Launching multiple workers on different threads for parallel firing
+    with ThreadPoolExecutor(max_workers=THREADS) as executor:
+        for i in range(THREADS):
+            executor.submit(burst_worker, cl, THREAD_ID, TARGET_NAME, i+1)
 
 if __name__ == "__main__":
     main()
