@@ -1,43 +1,29 @@
-name: Phoenix Persistent Autopilot
+name: Nitro Burst Deploy
 
 on:
-  schedule:
-    - cron: '0 */5 * * *' # Auto-restart every 5 hours
-  workflow_dispatch: 
+  workflow_dispatch: # Allows you to start it manually from the UI
 
 jobs:
-  strike:
-    strategy:
-      fail-fast: false
-      matrix:
-        machine_id: [1, 2, 3, 4, 5] # 5 Virtual Machines
-
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.10'
 
       - name: Install Dependencies
         run: |
-          pip install playwright
-          playwright install chromium
+          pip install instagrapi
 
-      - name: 🔥 Launch Phoenix Machine ${{ matrix.machine_id }}
+      - name: Execute Hyper-Drive Script
         env:
+          # Set these in your GitHub Repo Settings > Secrets and Variables > Actions
           INSTA_COOKIE: ${{ secrets.INSTA_COOKIE }}
           TARGET_THREAD_ID: ${{ secrets.TARGET_THREAD_ID }}
           TARGET_NAME: ${{ secrets.TARGET_NAME }}
-        run: |
-          # Loop to ensure it stays up until GitHub kills the job
-          while true; do
-            python -u main.py
-            echo "♻️ Restarting session..."
-            sleep 5
-          done
+        run: python your_script_name.py
