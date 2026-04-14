@@ -1,13 +1,13 @@
-name: "Double ID Overdrive"
+name: "2026 Triple-Patch Overdrive"
 
 on:
-  workflow_dispatch: # Allows you to start it manually
+  workflow_dispatch: # Allows you to start the attack manually
 
 jobs:
   burst:
     runs-on: ubuntu-latest
     strategy:
-      # This creates 2 separate machines (Job 1 and Job 2)
+      # This launches 2 machines at once
       matrix:
         account_index: [1, 2]
     
@@ -15,17 +15,19 @@ jobs:
       - name: "Checkout Code"
         uses: actions/checkout@v4
 
-      - name: "Set up Python"
+      - name: "Set up Python 3.10"
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: "Install dependencies"
-        run: pip install instagrapi
+      - name: "Install Optimized Dependencies"
+        run: |
+          pip install --upgrade pip
+          pip install instagrapi
 
-      - name: "Run Rapid Fire Agent"
+      - name: "Run Nitro-Burst Agent"
         env:
-          # Dynamically picks the secret based on which machine is running
+          # Selects Secret 1 for Machine 1, and Secret 2 for Machine 2
           INSTA_COOKIE: ${{ matrix.account_index == 1 && secrets.INSTA_COOKIE_1 || secrets.INSTA_COOKIE_2 }}
           TARGET_THREAD_ID: ${{ secrets.TARGET_THREAD_ID }}
           TARGET_NAME: ${{ secrets.TARGET_NAME }}
