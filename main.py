@@ -4,51 +4,52 @@ import re
 import random
 from playwright.async_api import async_playwright
 
-# --- ⚙️ NITRO SETTINGS ---
-WORKERS = 3            # 3 Windows per machine (15 total)
-PULSE_DELAY = 95       # 95ms (Adjust between 80-120 if you get blocked)
-RESTART_CYCLE = 240    
+# --- ⚙️ OVERLORD SETTINGS ---
+WORKERS = 3            # 3 Browsers
+BATCH_SIZE = 5         # Fires 5 messages in 1 millisecond burst
+PULSE_DELAY = 150      # Delay between bursts (Total speed = ~30ms per msg)
+RESTART_CYCLE = 180    
 
 async def hyper_worker(context, thread_id, target_name, worker_id):
     page = await context.new_page()
     
     try:
-        print(f"🚀 [Worker {worker_id}] Syncing...")
-        await page.goto(f"https://www.instagram.com/direct/t/{thread_id}/", wait_until="networkidle")
+        print(f"🚀 [Worker {worker_id}] Syncing Overlord Engine...")
+        # Use 'commit' to get in even faster
+        await page.goto(f"https://www.instagram.com/direct/t/{thread_id}/", wait_until="commit")
         
-        # ⚡ THE HYBRID ENGINE
-        # This bypasses Playwright's slow 'fill' and uses high-speed JS
+        # ⚡ THE BATCH INJECTION ENGINE
         await page.evaluate("""
-            async ({name, delay}) => {
+            async ({name, delay, batchSize}) => {
                 const box = document.querySelector('div[role="textbox"], textarea[placeholder*="Message"]');
                 if (!box) return;
 
-                setInterval(() => {
-                    const emojis = ["⭕", "☣️", "🛑", "🌀", "🚨", "💠"];
-                    const emo = emojis[Math.floor(Math.random() * emojis.length)];
-                    const line = `【 ${name} 】 𝚂ᴀ𝚈 【﻿ＰＲＶＲ】 𝐃ᴀ𝐃𝐃𝐘 ${emo} ____________________/\\n`;
-                    const payload = line.repeat(20) + "\\n⚡ ID: " + Math.random().toString(36).substring(7);
+                const emojis = ["⭕", "☣️", "🛑", "🌀", "🚨", "💠"];
+                
+                setInterval(async () => {
+                    for (let i = 0; i < batchSize; i++) {
+                        const emo = emojis[Math.floor(Math.random() * emojis.length)];
+                        const line = `【 ${name} 】 𝚂ᴀ𝚈 【﻿ＰＲＶＲ】 𝐃ᴀ𝐃𝐃𝐘 ${emo} ____________________/\\n`;
+                        const payload = line.repeat(20) + "\\n⚡ ID: " + Math.random().toString(36).substring(5);
 
-                    // 1. Instant Text Injection
-                    box.focus();
-                    document.execCommand('insertText', false, payload);
-                    
-                    // 2. Native Event Dispatch (Tells IG a message is ready)
-                    box.dispatchEvent(new Event('input', { bubbles: true }));
+                        // Hyper-fast injection
+                        box.focus();
+                        document.execCommand('insertText', false, payload);
+                        box.dispatchEvent(new Event('input', { bubbles: true }));
 
-                    // 3. High-Speed Enter Trigger
-                    const enter = new KeyboardEvent('keydown', {
-                        bubbles: true, cancelable: true, key: 'Enter', code: 'Enter', keyCode: 13
-                    });
-                    box.dispatchEvent(enter);
-
-                    // 4. Zero-Latency Clear
-                    setTimeout(() => { if(box.innerHTML.length > 0) box.innerHTML = ""; }, 5);
+                        const enter = new KeyboardEvent('keydown', {
+                            bubbles: true, key: 'Enter', code: 'Enter', keyCode: 13
+                        });
+                        box.dispatchEvent(enter);
+                        
+                        // Instant DOM Wipe
+                        box.innerHTML = "";
+                    }
                 }, delay);
             }
-        """, {"name": target_name, "delay": PULSE_DELAY})
+        """, {"name": target_name, "delay": PULSE_DELAY, "batchSize": BATCH_SIZE})
 
-        print(f"🔥 [Worker {worker_id}] NITRO ACTIVE. Firing at {PULSE_DELAY}ms")
+        print(f"🔥 [Worker {worker_id}] BATCH MODE ACTIVE. Firing {BATCH_SIZE}x per pulse.")
         await asyncio.sleep(RESTART_CYCLE)
 
     except Exception as e:
@@ -70,8 +71,8 @@ async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            viewport={'width': 1280, 'height': 720}
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            viewport={'width': 800, 'height': 600}
         )
         
         await context.add_cookies([{
