@@ -1,33 +1,21 @@
 import os
 import re
-import sys
 import asyncio
-import subprocess
-
-# --- 🛠️ AUTO-INSTALLER ---
-def install_dependencies():
-    print("📦 Installing Playwright and dependencies...")
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "playwright"])
-        subprocess.check_call([sys.executable, "-m", "playwright", "install", "chromium"])
-        print("✅ Installation Complete.\n")
-    except Exception as e:
-        print(f"⚠️ Installation failed: {e}")
+import gc
 
 # --- ⚙️ CONFIGURATION ---
-TOTAL_AGENTS = 6        
-PULSE_DELAY = 100       
-SESSION_MAX_SEC = 120   
+TOTAL_AGENTS = 6        # Tabs per machine (48 Total across the Matrix)
+PULSE_DELAY = 100       # 100ms firing rate
+SESSION_MAX_SEC = 120   # 2-Minute Life Cycle
 TOTAL_DURATION = 25000  
 
 async def run_agent(context, target_id, target_name):
     """Parallel Agent Worker"""
     page = await context.new_page()
     try:
-        print(f"📡 Agent Joining Thread: {target_id}")
+        print(f"📡 Agent Joining Thread: {target_id}", flush=True)
         await page.goto(f"https://www.instagram.com/direct/t/{target_id}/", wait_until="domcontentloaded")
         
-        # --- FIXED JS ENGINE (Escaped Braces) ---
         await page.evaluate(f"""
             () => {{
                 const name = "{target_name}";
@@ -61,12 +49,11 @@ async def run_agent(context, target_id, target_name):
         """)
         await asyncio.sleep(SESSION_MAX_SEC)
     except Exception as e:
-        print(f"⚠️ Agent Error: {e}")
+        print(f"⚠️ Agent Error: {e}", flush=True)
     finally:
         await page.close()
 
 async def main():
-    install_dependencies()
     from playwright.async_api import async_playwright
 
     cookie = os.environ.get("INSTA_COOKIE")
@@ -74,14 +61,14 @@ async def main():
     target_name = os.environ.get("TARGET_NAME", "EZRA")
 
     if not cookie or not target_id:
-        print("❌ CRITICAL: Missing Environment Variables!")
+        print("❌ CRITICAL: Missing Environment Variables!", flush=True)
         return
 
     sid_match = re.search(r'sessionid=([^;]+)', cookie)
     sid = sid_match.group(1) if sid_match else cookie
 
     async with async_playwright() as p:
-        print("🚀 Launching Master Browser...")
+        print("🚀 Launching Master Browser...", flush=True)
         browser = await p.chromium.launch(headless=True)
         
         context = await browser.new_context(
@@ -98,10 +85,11 @@ async def main():
 
         start_run = asyncio.get_event_loop().time()
         while (asyncio.get_event_loop().time() - start_run) < TOTAL_DURATION:
-            print(f"♻️ Starting Parallel Burst (Duration: {SESSION_MAX_SEC}s)")
+            print(f"♻️ Starting Parallel Burst (6 Agents)...", flush=True)
             tasks = [run_agent(context, target_id, target_name) for _ in range(TOTAL_AGENTS)]
             await asyncio.gather(*tasks)
-            print("🧹 Session complete. Refreshing agents...")
+            print("🧹 Purging Memory...", flush=True)
+            gc.collect()
             
         await browser.close()
 
@@ -109,4 +97,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("🛑 Script stopped.")
+        pass
