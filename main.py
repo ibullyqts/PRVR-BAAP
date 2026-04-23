@@ -1,122 +1,119 @@
-# -*- coding: utf-8 -*-
-import asyncio, os, sys, random, re, gc
-from playwright.async_api import async_playwright
+import os, time, re, random, threading, gc, sys
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium_stealth import stealth
 
-# --- ⚙️ V100 "ROTATING STRIKE" SETTINGS ---
-AGENTS_PER_MACHINE = 2    
-TABS_PER_AGENT = 2        
-PULSE_DELAY = 100         # 100ms
-SESSION_MAX_SEC = 120     # 2-Minute RAM Flush
+# --- ⚙️ V100 TUNED SETTINGS ---
+THREADS = 2             # 2 Browsers per machine
+TABS_PER_THREAD = 2     # 3 Tabs per browser (6 Agents total)
+PULSE_DELAY = 100       # 100ms (Hyper-speed)
 
-async def setup_stealth(page):
-    """Uses CDP to harden the browser and block Meta's tracking"""
-    try:
-        client = await page.context.new_cdp_session(page)
-        # Drop Instagram's anti-spam telemetry packets
-        await client.send("Network.setBlockedURLs", {
-            "urls": ["*graph.instagram.com*", "*logging.instagram.com*", "*/logging/*", "*.facebook.com*"]
-        })
-        # Mask the browser footprint
-        await client.send("Page.addScriptToEvaluateOnNewDocument", {
-            "source": "delete window.navigator.webdriver; window.chrome = { runtime: {} };"
-        })
-    except Exception:
-        pass
+# ♻️ RESTART CYCLES (As requested)
+SESSION_MAX_SEC = 120   # 2-Minute Restart
+TOTAL_DURATION = 25000  # ~7 Hours
 
-async def run_tab(context, target_id, target_name, agent_id, tab_id):
-    page = await context.new_page()
-    try:
-        await setup_stealth(page)
-        
-        # Navigate to chat
-        await page.goto(f"https://www.instagram.com/direct/t/{target_id}/", wait_until="commit", timeout=60000)
-        await asyncio.sleep(8) 
-        
-        # ⚡ ROTATING INJECTION STRIKE
-        await page.evaluate("""
-            ([tName, mDelay]) => {
-                // Circular emojis for rotation effect
-                const frames = ["⭕", "🌀", "🔴", "💠", "🧿", "🔘"];
-                let frameIndex = 0;
+sys.stdout.reconfigure(encoding='utf-8')
 
-                setInterval(() => {
-                    const box = document.querySelector('div[role="textbox"], [contenteditable="true"]');
-                    if (box) {
-                        const currentEmoji = frames[frameIndex % frames.length];
-                        const pattern = `(${tName}) 𝚂ᴀ𝚈 【﻿ＰＲＶ𝐑】 𝐃ᴀᴅᴅ𝐘 ~${currentEmoji}`;
-                        
-                        // 24-line high-impact block
-                        const fullBlock = Array(24).fill(pattern).join('\\n');
+def get_driver():
+    options = Options()
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--blink-settings=imagesEnabled=false")
+    options.page_load_strategy = 'eager'
+    options.add_experimental_option("mobileEmulation", {"deviceName": "iPad Pro"})
+    
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
+    
+    stealth(driver, languages=["en-US"], vendor="Google Inc.", platform="Linux armv8l", fix_hairline=True)
+    return driver
 
-                        // Native command for speed
-                        document.execCommand('insertText', false, fullBlock);
-                        
-                        // Dispatch input to wake up React
-                        box.dispatchEvent(new Event('input', { bubbles: true }));
-                        
-                        // Fire Enter
-                        const enter = new KeyboardEvent('keydown', { 
-                            bubbles: true, cancelable: true, key: 'Enter', code: 'Enter', keyCode: 13 
-                        });
-                        box.dispatchEvent(enter);
-                        
-                        frameIndex++; 
-                        
-                        // Cleanup
-                        setTimeout(() => { if(box.innerText.length > 0) box.innerHTML = ""; }, 5);
+def run_agent(agent_id, cookie, target_id, target_name):
+    global_start = time.time()
+    
+    while (time.time() - global_start) < TOTAL_DURATION:
+        driver = None
+        try:
+            print(f"🚀 [Agent {agent_id}] Starting 2-Min Cycle...")
+            driver = get_driver()
+            driver.get("https://www.instagram.com/")
+            
+            # Cookie Injection
+            sid = re.search(r'sessionid=([^;]+)', cookie).group(1) if 'sessionid=' in cookie else cookie
+            driver.add_cookie({'name': 'sessionid', 'value': sid.strip(), 'domain': '.instagram.com'})
+            
+            # Launch Multi-Tabs
+            for _ in range(TABS_PER_THREAD):
+                driver.execute_script(f"window.open('https://www.instagram.com/direct/t/{target_id}/', '_blank');")
+                time.sleep(2)
+
+            handles = driver.window_handles[1:]
+            for handle in handles:
+                driver.switch_to.window(handle)
+                # ⚡ THE JS HYPER-ENGINE (Firing 100ms)
+                driver.execute_script("""
+                    const name = arguments[0];
+                    const delay = arguments[1];
+                    
+                    function getBlock(n) {
+                        const emojis = ["👑", "⚡", "🔥", "🦈", "🦁", "💎", "⚔️", "🔱", "🧿", "🌪️"];
+                        const emo = emojis[Math.floor(Math.random() * emojis.length)];
+                        const line = `【 ${n} 】 SAY P R V R बाप ${emo} ____________________/\\n`;
+                        let block = "";
+                        for(let i=0; i<20; i++) { block += line; }
+                        return block + "\\n⚡ ID: " + Math.random().toString(36).substring(7);
                     }
-                }, mDelay);
-            }
-        """, [target_name, PULSE_DELAY])
-        
-        await asyncio.sleep(SESSION_MAX_SEC)
-    except Exception as e:
-        print(f"⚠️ [M-A{agent_id}-T{tab_id}] Error: {e}")
-    finally:
-        await page.close()
 
-async def run_agent(agent_id, cookie, target_id, target_name):
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True, args=[
-            "--no-sandbox", 
-            "--disable-dev-shm-usage",
-            "--js-flags='--max-old-space-size=1024'" 
-        ])
-        
-        while True:
-            context = await browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-            )
-            
-            # Add Cookie
-            sid_match = re.search(r'sessionid=([^;]+)', cookie)
-            sid = sid_match.group(1) if sid_match else cookie
-            await context.add_cookies([{'name': 'sessionid', 'value': sid.strip(), 'domain': '.instagram.com', 'path': '/'}])
-            
-            # Parallel tabs
-            tabs = [run_tab(context, target_id, target_name, agent_id, i+1) for i in range(TABS_PER_AGENT)]
-            await asyncio.gather(*tabs)
-            
-            await context.close()
-            gc.collect()
+                    setInterval(() => {
+                        const box = document.querySelector('div[role="textbox"], [contenteditable="true"]');
+                        if (box) {
+                            const text = getBlock(name);
+                            box.focus();
+                            document.execCommand('insertText', false, text);
+                            box.dispatchEvent(new Event('input', { bubbles: true }));
 
-async def main():
+                            const enter = new KeyboardEvent('keydown', {
+                                bubbles: true, cancelable: true, key: 'Enter', code: 'Enter', keyCode: 13
+                            });
+                            box.dispatchEvent(enter);
+                            
+                            setTimeout(() => { if(box.innerHTML.length > 0) box.innerHTML = ""; }, 5);
+                        }
+                    }, delay);
+                """, target_name, PULSE_DELAY)
+
+            print(f"🔥 [Agent {agent_id}] Bursting... (Reset in 120s)")
+            time.sleep(SESSION_MAX_SEC) # 2-Minute Life Cycle
+
+        except Exception as e:
+            print(f"⚠️ [Agent {agent_id}] Cycle Error: {e}")
+        finally:
+            if driver: driver.quit()
+            gc.collect() # RAM Flush
+            time.sleep(2)
+
+def main():
     cookie = os.environ.get("INSTA_COOKIE")
     target_id = os.environ.get("TARGET_THREAD_ID")
-    target_name = os.environ.get("TARGET_NAME", "TARGET")
-    
+    target_name = os.environ.get("TARGET_NAME", "EZRA")
+
     if not cookie or not target_id:
-        print("❌ Critical: Secrets Missing!")
+        print("❌ Missing Secrets!")
         return
 
-    print(f"🔥 PHOENIX V100 CLUSTER STARTING (Rotating Strike Mode)")
-    
-    agents = [run_agent(i + 1, cookie, target_id, target_name) for i in range(AGENTS_PER_MACHINE)]
-    await asyncio.gather(*agents)
+    threads = []
+    for i in range(THREADS):
+        t = threading.Thread(target=run_agent, args=(i+1, cookie, target_id, target_name))
+        t.start()
+        threads.append(t)
+        time.sleep(10)
+
+    for t in threads:
+        t.join()
 
 if __name__ == "__main__":
-    sys.stdout.reconfigure(encoding='utf-8')
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        pass
+    main()
