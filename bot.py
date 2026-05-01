@@ -5,8 +5,8 @@ import re
 import random
 import sys
 from playwright.async_api import async_playwright
-# 🔱 FIXED IMPORT: Importing the specific function to avoid 'module not callable' error
-from playwright_stealth import stealth
+# 🔱 THE FIX: Explicitly import the async function from the stealth.async_api
+from playwright_stealth import stealth_async
 
 # --- ⚙️ V100 TUNED SETTINGS ---
 TABS_PER_MACHINE = 2    
@@ -41,12 +41,11 @@ async def run_strike(node_id, cookie, target_id, target_name):
         for i in range(TABS_PER_MACHINE):
             page = await context.new_page()
             
-            # 🔱 STABILITY FIX: If 'await stealth(page)' fails again, 
-            # use 'stealth(page)' without await (some versions are sync)
+            # 🔱 STABILITY FIX: Using the explicit async stealth function
             try:
-                await stealth(page)
-            except TypeError:
-                stealth(page)
+                await stealth_async(page)
+            except Exception as e:
+                print(f"⚠️ Stealth warning on Machine {node_id}: {e}")
             
             try:
                 await page.goto("https://www.google.com", wait_until="commit", timeout=5000)
