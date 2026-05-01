@@ -49,7 +49,7 @@ async def run_strike(node_id, cookie, target_id, target_name):
             'domain': '.instagram.com', 'path': '/', 'secure': True, 'httpOnly': True
         }])
 
-        await send_tg(f"🚀 <b>Machine {node_id} Restored & Online</b>\nTarget: {target_name}")
+        await send_tg(f"🚀 <b>Machine {node_id} Online</b>\nTarget: {target_name}\nStatus: Underscore Alignment Active")
 
         pages = []
         for i in range(TABS_PER_MACHINE):
@@ -60,17 +60,17 @@ async def run_strike(node_id, cookie, target_id, target_name):
             except Exception as e:
                 print(f"⚠️ Tab {i} error: {e}")
 
-        # ⚡ THE WORKING SCRIPT BLOCK
+        # ⚡ WORKING SCRIPT WITH UNDERSCORE ALIGNMENT
         strike_script = """
             (name, delay) => {
                 function getBlock(n) {
                     const lines = [
-                        `[${n}] 𝑻𝑬𝑹𝑰 𝑴𝑨𝑨 𝑲𝑨 𝑩𝑯𝑶𝑺𝑫𝑨 𝑷 𝑹 𝑽 𝑹 𝑷𝑨𝑷𝑨 𝑲𝑨 𝑮𝑼𝑳𝑨𝑴 🔥`,
-                        `[${n}] 𝑷 𝑹 𝑽 𝑹 𝑷𝑨𝑷𝑨 𝑵𝑬 𝑻𝑬𝑹𝑰 𝑴𝑨𝑨 𝑲𝑶 𝑵𝑨𝑵𝑮𝑨 𝑲𝑨𝑹 𝑫𝑰𝒀𝑨 😂`,
-                        `[${n}] 𝑹𝑼𝑵𝑫𝑰 𝑲𝑬 𝑩𝑨𝑪𝑪𝑯𝑬 𝑩𝑨𝑨𝑷 𝑺𝑬 𝑷𝑨𝑵𝑮𝑨 𝑵𝑨𝑯𝑰 𝑳𝑬𝑻𝑬 🤡`,
-                        `[${n}] 𝑷 𝑹 𝑽 𝑹 𝑷𝑨𝑷𝑨 𝑻𝑬𝑹𝑨 𝑲𝑯𝑨𝑨𝑵𝑫𝑨𝑨𝑵𝑰 𝑴𝑨𝑨𝑳𝑰𝑲 𝑯𝑨𝑰 👑`,
-                        `[${n}] 𝑻𝑬𝑹𝑰 𝑴𝑨𝑨 𝑲𝑰 𝑪𝑯𝑼𝑻 𝑴𝑨𝑰 𝑷 𝑹 𝑽 𝑹 𝑷𝑨𝑷𝑨 𝑲𝑨 𝑯𝑨𝑻𝑯𝑶𝑫𝑨 🔨`,
-                        `[${n}] 𝑱𝑨𝑳𝑫𝑰 𝑺𝑬 𝑷 𝑹 𝑽 𝑹 𝑷𝑨𝑷𝑨 𝑲𝑨 𝑳𝑨𝑼𝑫𝑨 𝑪𝑯𝑶𝑶𝑺 𝑳𝑬 𝑲𝑨𝑻𝑻𝑬 👅`
+                        `___[${n}] 𝑻𝑬𝑹𝑰 𝑴𝑨𝑨 𝑲𝑨 𝑩𝑯𝑶𝑺𝑫𝑨 𝑷 𝑹 𝑽 𝑹 𝑷𝑨𝑷𝑨 𝑲𝑨 𝑮𝑼𝑳𝑨𝑴 🔥___`,
+                        `___[${n}] 𝑷 𝑹 𝑽 𝑹 𝑷𝑨𝑷𝑨 𝑵𝑬 𝑻𝑬𝑹𝑰 𝑴𝑨𝑨 𝑲𝑶 𝑵𝑨𝑵𝑮𝑨 𝑲𝑨𝑹 𝑫𝑰𝒀𝑨 😂___`,
+                        `___[${n}] 𝑹𝑼𝑵𝑫𝑰 𝑲𝑬 𝑩𝑨𝑪𝑪𝑯𝑬 𝑩𝑨𝑨𝑷 𝑺𝑬 𝑷𝑨𝑵𝑮𝑨 𝑵𝑨𝑯𝑰 𝑳𝑬𝑻𝑬 🤡___`,
+                        `___[${n}] 𝑷 𝑹 𝑽 𝑹 𝑷𝑨𝑷𝑨 𝑻𝑬𝑹𝑨 𝑲𝑯𝑨𝑨𝑵𝑫𝑨𝑨𝑵𝑰 𝑴𝑨𝑨𝑳𝑰𝑲 𝑯𝑨𝑰 👑___`,
+                        `___[${n}] 𝑻𝑬𝑹𝑰 𝑴𝑨𝑨 𝑲𝑰 𝑪𝑯𝑼𝑻 𝑴𝑨𝑰 𝑷 𝑹 𝑽 𝑹 𝑷𝑨𝑷𝑨 𝑲𝑨 𝑯𝑨𝑻𝑯𝑶𝑫𝑨 🔨___`,
+                        `___[${n}] 𝑱𝑨𝑳𝑫𝑰 𝑺𝑬 𝑷 𝑹 𝑽 𝑹 𝑷𝑨𝑷𝑨 𝑲𝑨 𝑳𝑨𝑼𝑫𝑨 𝑪𝑯𝑶𝑶𝑺 𝑳𝑬 𝑲𝑨𝑻𝑻𝑬 👅___`
                     ];
                     const baseLine = lines[Math.floor(Math.random() * lines.length)];
                     let block = "";
@@ -100,12 +100,12 @@ async def run_strike(node_id, cookie, target_id, target_name):
             await pg.evaluate(strike_script, [target_name, PULSE_DELAY])
             print(f"🔥 [Machine {node_id}] Tab {p_index+1} Bursting...")
 
-        # Keep alive loop with Telegram progress updates
+        # Reporting loop
         elapsed = 0
         while elapsed < SESSION_MAX_SEC:
-            await asyncio.sleep(600) # Ping every 10 mins
+            await asyncio.sleep(600) 
             elapsed += 600
-            await send_tg(f"📊 <b>Machine {node_id} Status</b>\nUptime: {elapsed//60}m\nStrike: Active")
+            await send_tg(f"📊 <b>Machine {node_id} Progress</b>\nUptime: {elapsed//60}m\nStrike: Active")
 
         await context.close()
 
