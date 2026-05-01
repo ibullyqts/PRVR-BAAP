@@ -5,21 +5,18 @@ import re
 import random
 import sys
 from playwright.async_api import async_playwright
-# 🔱 FIXED IMPORT: Correct usage for modern playwright-stealth
+# 🔱 FIXED IMPORT: Importing the specific function to avoid 'module not callable' error
 from playwright_stealth import stealth
 
 # --- ⚙️ V100 TUNED SETTINGS ---
-TABS_PER_MACHINE = 2    # Total tabs per machine (16 total across cluster)
-PULSE_DELAY = 115       # Targeted pulse in ms
-SESSION_MAX_SEC = 240   # 4-minute high-intensity burst
+TABS_PER_MACHINE = 2    
+PULSE_DELAY = 115       
+SESSION_MAX_SEC = 240   
 sys.stdout.reconfigure(encoding='utf-8')
 
 async def run_strike(node_id, cookie, target_id, target_name):
     async with async_playwright() as p:
-        # 🔱 HARDENED FINGERPRINT (iPad Pro Sync)
         user_agent = "Mozilla/5.0 (iPad; CPU OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1"
-        
-        # 🔱 PERSISTENT CONTEXT (Warming Architecture)
         profile_path = os.path.join(os.getcwd(), f"phoenix_profile_{node_id}")
         
         context = await p.chromium.launch_persistent_context(
@@ -32,7 +29,6 @@ async def run_strike(node_id, cookie, target_id, target_name):
             args=["--disable-dev-shm-usage", "--no-sandbox"]
         )
 
-        # 🔱 INJECT SESSION
         sid = re.search(r'sessionid=([^;]+)', cookie).group(1) if 'sessionid=' in cookie else cookie
         await context.add_cookies([{
             'name': 'sessionid', 'value': sid.strip(), 
@@ -44,14 +40,17 @@ async def run_strike(node_id, cookie, target_id, target_name):
         pages = []
         for i in range(TABS_PER_MACHINE):
             page = await context.new_page()
-            # 🔱 FIXED STEALTH: Uses the updated awaitable function
-            await stealth(page)
+            
+            # 🔱 STABILITY FIX: If 'await stealth(page)' fails again, 
+            # use 'stealth(page)' without await (some versions are sync)
+            try:
+                await stealth(page)
+            except TypeError:
+                stealth(page)
             
             try:
-                # Warming Handshake via Google
                 await page.goto("https://www.google.com", wait_until="commit", timeout=5000)
                 await asyncio.sleep(random.uniform(1, 2))
-                # Target Navigation
                 await page.goto(f"https://www.instagram.com/direct/t/{target_id}/", wait_until="domcontentloaded")
                 pages.append(page)
             except Exception as e:
@@ -87,7 +86,6 @@ async def run_strike(node_id, cookie, target_id, target_name):
                         box.dispatchEvent(enter);
                         setTimeout(() => { if(box.innerHTML.length > 0) box.innerHTML = ""; }, 5);
                     }
-                    // Behavioral Jitter to defeat 2026 AI detection
                     setTimeout(pulse, delay + (Math.random() * 40 - 20));
                 }
                 pulse();
@@ -108,7 +106,7 @@ async def main():
     m_id = os.environ.get("MACHINE_ID", "1")
 
     if not cookie or not target_id:
-        print("❌ CRITICAL: Secrets missing. Check GitHub Settings.")
+        print("❌ CRITICAL: Secrets missing.")
         return
 
     await run_strike(m_id, cookie, target_id, target_name)
