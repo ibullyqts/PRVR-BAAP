@@ -1,4 +1,4 @@
-name: Phoenix V100 Working Restore
+name: Phoenix V100 Nitro Cluster
 
 on:
   schedule:
@@ -22,10 +22,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 🔱 Install Dependencies
+      - name: 🔱 High-Speed Setup
         run: |
           pip install playwright playwright-stealth httpx
-          playwright install chromium
+          playwright install --with-deps chromium
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
 
       - name: 🔱 Ignition ${{ matrix.machine_id }}
         env:
