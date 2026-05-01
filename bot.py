@@ -5,7 +5,8 @@ import re
 import random
 import sys
 from playwright.async_api import async_playwright
-from playwright_stealth import stealth_async
+# 🔱 FIXED IMPORT: Correct usage for modern playwright-stealth
+from playwright_stealth import stealth
 
 # --- ⚙️ V100 TUNED SETTINGS ---
 TABS_PER_MACHINE = 2    # Total tabs per machine (16 total across cluster)
@@ -43,7 +44,9 @@ async def run_strike(node_id, cookie, target_id, target_name):
         pages = []
         for i in range(TABS_PER_MACHINE):
             page = await context.new_page()
-            await stealth_async(page)
+            # 🔱 FIXED STEALTH: Uses the updated awaitable function
+            await stealth(page)
+            
             try:
                 # Warming Handshake via Google
                 await page.goto("https://www.google.com", wait_until="commit", timeout=5000)
