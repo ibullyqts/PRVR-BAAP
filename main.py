@@ -9,7 +9,7 @@ import uuid
 from playwright.async_api import async_playwright
 
 START_TIME = time.time()
-SIGNATURE = "ʏᴜᴠɪ चुद कैसे राहा?"
+SIGNATURE = "ρ 𝕣 ꪜ 𝕣 अब्बू ☽"
 SIGNATURE_CHANCE = 0.15 
 
 def get_payload():
